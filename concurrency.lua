@@ -3,9 +3,9 @@ local concurrency = {}
 concurrency._version = "0.1.0"
 
 concurrency.TaskStatus = {
-	"Pending" = 0,
-	"Completed" = 1,
-	"Canceled" = 2
+	["Pending"] = 0,
+	["Completed"] = 1,
+	["Canceled"] = 2
 }
 
 local function taskCompleted(self)
@@ -18,7 +18,7 @@ end
 
 local function taskStart(self, ...)
 	if self.Status == concurrency.TaskStatus.Pending then
-		local resume = {coroutine.resume(self.Coroutine, unpack(arg))}
+		local resume = {coroutine.resume(self.Coroutine, ...)}
 		if resume[1] then
 			if coroutine.status(self.Coroutine) == "dead" then
 				table.remove(resume, 1)
@@ -46,7 +46,7 @@ local function taskContinue(self, fn, ...)
 	
 	self:Wait()
 	if self.Status == concurrency.TaskStatus.Completed then
-		fn(unpack(args))
+		fn(...)
 	else
 		error(task.Value, 2)
 	end
@@ -67,6 +67,8 @@ function concurrency.task(fn)
 	o.Start = taskStart
 	o.Wait = taskWait
 	o.Continue = taskContinue
+	
+	return o
 end
 
 function concurrency.async(fn)
@@ -77,7 +79,7 @@ function concurrency.async(fn)
 	
 	local asyncFn = function(...)
 		local task = concurrency.task(fn)
-		task:Start(unpack(arg))
+		task:Start(...)
 		return task
 	end
 	
@@ -90,11 +92,13 @@ function concurrency.await(task)
 		error("bad argument #1 to 'await' (table expected, got " .. t .. ")", 2)
 	end
 	
-	coroutine.yield()
+	if task.Status == concurrency.TaskStatus.Pending then
+		concurrency.yield()
+		task:Wait()
+	end
 	
-	task:Wait()
 	if task.Status == concurrency.TaskStatus.Completed then
-		return task.Value
+		return unpack(task.Value)
 	else
 		error(task.Value, 2)
 	end
