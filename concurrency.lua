@@ -102,6 +102,34 @@ function concurrency.await(task)
 	end
 end
 
+function concurrency.callback(fn)
+	local t = type(fn)
+	if t ~= "function" then
+		error("bad argument #1 to 'callback' (function expected, got " .. t .. ")", 2)
+	end
+	
+	local callbackFn = function(...)
+		local deferred = concurrency.task(function(...)
+			concurrency.sleep()
+			local task = concurrency.task(fn)
+			local args = {...}
+			local call = type(args[#args]) == "function"
+			local callback
+			if call then
+				callback = table.remove(args)
+			end
+			task:Start(unpack(args))
+			task:Wait()
+			if call then
+				callback(unpack(task.Value))
+			end
+		end)
+		deferred:Start(...)
+	end
+	
+	return callbackFn
+end
+
 concurrency.yield = coroutine.yield
 
 function concurrency.sleep(time)
