@@ -52,7 +52,7 @@ function Task:Continue(fn, ...)
 	if self.Status == concurrency.TaskStatus.Completed then
 		fn(...)
 	else
-		error(task.Value, 2)
+		error(self.Value, 2)
 	end
 end
 
