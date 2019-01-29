@@ -1,6 +1,6 @@
 local concurrency = {}
 
-concurrency._version = "0.1.0"
+concurrency._version = "0.1.1"
 
 concurrency.TaskStatus = {
 	["Pending"] = 0,
@@ -35,6 +35,7 @@ end
 local function taskWait(self)
 	while self.Status == concurrency.TaskStatus.Pending do
 		self:Start()
+		concurrency.sleep()
 	end
 end
 
@@ -104,8 +105,13 @@ function concurrency.await(task)
 	end
 end
 
-function concurrency.yield()
-	coroutine.yield()
+concurrency.yield = coroutine.yield
+
+function concurrency.sleep(time)
+	-- Sleep here if able.
+	
+	-- Lua provides no sleep functionality by default. Many APIs provide this and
+	-- it should be added for each API this library is included in.
 end
 
 return concurrency
