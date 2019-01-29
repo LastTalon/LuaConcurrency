@@ -8,15 +8,18 @@ concurrency.TaskStatus = {
 	["Canceled"] = 2
 }
 
-local function taskCompleted(self)
+local Task = {}
+Task.__index = Task
+
+function Task:Completed()
 	return self.Status == concurrency.TaskStatus.Completed
 end
 
-local function taskCanceled(self)
+function Task:Canceled()
 	return self.Status == concurrency.TaskStatus.Canceled
 end
 
-local function taskStart(self, ...)
+function Task:Start(...)
 	if self.Status == concurrency.TaskStatus.Pending then
 		local resume = {coroutine.resume(self.Coroutine, ...)}
 		if resume[1] then
@@ -32,14 +35,14 @@ local function taskStart(self, ...)
 	end
 end
 
-local function taskWait(self)
+function Task:Wait()
 	while self.Status == concurrency.TaskStatus.Pending do
 		self:Start()
 		concurrency.sleep()
 	end
 end
 
-local function taskContinue(self, fn, ...)
+function Task:Continue(fn, ...)
 	local t = type(fn)
 	if t ~= "function" then
 		error("bad argument #1 to 'Continue' (function expected, got " .. t .. ")", 2)
@@ -59,15 +62,9 @@ function concurrency.task(fn)
 		error("bad argument #1 to 'task' (function expected, got " .. t .. ")", 2)
 	end
 	
-	local o = {}
+	local self = setmetatable({}, Task)
 	o.Coroutine = coroutine.create(fn)
 	o.Status = concurrency.TaskStatus.Pending
-	o.Value = nil
-	o.Completed = taskCompleted
-	o.Canceled = taskCanceled
-	o.Start = taskStart
-	o.Wait = taskWait
-	o.Continue = taskContinue
 	
 	return o
 end
