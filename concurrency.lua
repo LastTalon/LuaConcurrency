@@ -8,6 +8,13 @@ concurrency.TaskStatus = {
 	["Canceled"] = 2
 }
 
+local function argTypeOrDie(arg, datatype, functionName, argPosition)
+	local t = type(arg)
+	if t ~= datatype then
+		error("bad argument #" .. argPosition .. " to '" .. functionName .. "' (" ..datatype .. " expected, got " .. t .. ")", 3)
+	end
+end
+
 local Task = {}
 Task.__index = Task
 
@@ -43,10 +50,7 @@ function Task:Wait()
 end
 
 function Task:Continue(fn, ...)
-	local t = type(fn)
-	if t ~= "function" then
-		error("bad argument #1 to 'Continue' (function expected, got " .. t .. ")", 2)
-	end
+	argTypeOrDie(fn, "function", "Continue", 1)
 	
 	self:Wait()
 	if self.Status == concurrency.TaskStatus.Completed then
@@ -57,10 +61,7 @@ function Task:Continue(fn, ...)
 end
 
 function concurrency.task(fn)
-	local t = type(fn)
-	if t ~= "function" then
-		error("bad argument #1 to 'task' (function expected, got " .. t .. ")", 2)
-	end
+	argTypeOrDie(fn, "function", "task", 1)
 	
 	local self = setmetatable({}, Task)
 	self.Coroutine = coroutine.create(fn)
@@ -70,10 +71,7 @@ function concurrency.task(fn)
 end
 
 function concurrency.async(fn)
-	local t = type(fn)
-	if t ~= "function" then
-		error("bad argument #1 to 'async' (function expected, got " .. t .. ")", 2)
-	end
+	argTypeOrDie(fn, "function", "async", 1)
 	
 	local asyncFn = function(...)
 		local task = concurrency.task(fn)
@@ -85,10 +83,7 @@ function concurrency.async(fn)
 end
 
 function concurrency.await(task)
-	local t = type(task)
-	if t ~= "table" then
-		error("bad argument #1 to 'await' (table expected, got " .. t .. ")", 2)
-	end
+	argTypeOrDie(task, "table", "await", 1)
 	
 	if task.Status == concurrency.TaskStatus.Pending then
 		concurrency.yield()
@@ -103,10 +98,7 @@ function concurrency.await(task)
 end
 
 function concurrency.callback(fn)
-	local t = type(fn)
-	if t ~= "function" then
-		error("bad argument #1 to 'callback' (function expected, got " .. t .. ")", 2)
-	end
+	argTypeOrDie(fn, "function", "callback", 1)
 	
 	local callbackFn = function(...)
 		local deferred = concurrency.task(function(...)
