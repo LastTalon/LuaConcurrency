@@ -63,10 +63,10 @@ function concurrency.task(fn)
 	end
 	
 	local self = setmetatable({}, Task)
-	o.Coroutine = coroutine.create(fn)
-	o.Status = concurrency.TaskStatus.Pending
+	self.Coroutine = coroutine.create(fn)
+	self.Status = concurrency.TaskStatus.Pending
 	
-	return o
+	return self
 end
 
 function concurrency.async(fn)
