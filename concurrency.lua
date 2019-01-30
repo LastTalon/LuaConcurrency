@@ -1,6 +1,6 @@
 local concurrency = {}
 
-concurrency._version = "0.1.1"
+concurrency._version = "0.1.2"
 
 concurrency.TaskStatus = {
 	["Pending"] = 0,
@@ -123,12 +123,6 @@ function concurrency.callback(fn)
 end
 
 concurrency.yield = coroutine.yield
-
-function concurrency.sleep(time)
-	-- Sleep here if able.
-	
-	-- Lua provides no sleep functionality by default. Many APIs provide this and
-	-- it should be added for each API this library is included in.
-end
+concurrency.sleep = require("sleep.sleep")
 
 return concurrency
