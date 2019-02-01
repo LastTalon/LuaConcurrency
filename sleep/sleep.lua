@@ -1,4 +1,4 @@
-local function sleep(time)
+local function sleep(duration)
 	-- Sleep here if able.
 	
 	-- Lua provides no sleep functionality by default. Many APIs provide this and
