@@ -1,6 +1,6 @@
 local concurrency = {}
 
-concurrency._version = "0.1.2"
+concurrency._version = "0.2.0"
 
 concurrency.TaskStatus = {
 	["Pending"] = 0,
@@ -49,15 +49,34 @@ function Task:Wait()
 	end
 end
 
-function Task:Continue(fn, ...)
-	argTypeOrDie(fn, "function", "Continue", 1)
+function Task:Then(fulfill, reject)
+	local fulfillTask
+	local rejectTask
 	
-	self:Wait()
-	if self.Status == concurrency.TaskStatus.Completed then
-		fn(...)
-	else
-		error(self.Value, 2)
+	if fulfill ~= nil and type(fulfill) == "function" then
+		fulfillTask = concurrency.task(fulfill)
 	end
+	
+	if reject ~= nil and type(reject) == "function" then
+		rejectTask = concurrency.task(reject)
+	end
+	
+	local deferred = concurrency.task(function()
+		concurrency.sleep()
+		self:Wait()
+		if self.Status == concurrency.TaskStatus.Completed then
+			if fulfillTask ~= nil then
+				fulfillTask:Start(unpack(self.Value))
+			end
+		else
+			if rejectTask ~= nil then
+				rejectTask:Start(self.Value)
+			end
+		end
+	end)
+	deferred:Start()
+	
+	return fulfillTask, rejectTask
 end
 
 function concurrency.task(fn)
@@ -101,22 +120,24 @@ function concurrency.callback(fn)
 	argTypeOrDie(fn, "function", "callback", 1)
 	
 	local callbackFn = function(...)
-		local deferred = concurrency.task(function(...)
-			concurrency.sleep()
-			local task = concurrency.task(fn)
-			local args = {...}
-			local call = type(args[#args]) == "function"
-			local callback
-			if call then
-				callback = table.remove(args)
+		local task = concurrency.task(fn)
+		local args = {...}
+		local fulfill
+		local reject
+		if type(args[#args]) == "function" then
+			fulfill = args[#args]
+			table.remove(args)
+			if type(args[#args]) == "function" then
+				reject = fulfill
+				fulfill = args[#args]
+				table.remove(args)
 			end
-			task:Start(unpack(args))
-			task:Wait()
-			if call then
-				callback(unpack(task.Value))
-			end
-		end)
-		deferred:Start(...)
+		end
+		
+		task:Start(unpack(args))
+		task:Then(fulfill, reject)
+		
+		return task
 	end
 	
 	return callbackFn
