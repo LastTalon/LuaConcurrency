@@ -1,12 +1,10 @@
 local concurrency = {}
+local Task = require("Task")
 
-concurrency._version = "0.2.0"
-
-concurrency.TaskStatus = {
-	["Pending"] = 0,
-	["Completed"] = 1,
-	["Canceled"] = 2
-}
+concurrency._version = "0.2.2"
+concurrency.TaskStatus = require("StatusEnum")
+concurrency.sleep = Task.sleep
+concurrency.yield = coroutine.yield
 
 local function argTypeOrDie(arg, datatype, functionName, argPosition)
 	local t = type(arg)
@@ -15,78 +13,10 @@ local function argTypeOrDie(arg, datatype, functionName, argPosition)
 	end
 end
 
-local Task = {}
-Task.__index = Task
-
-function Task:Completed()
-	return self.Status == concurrency.TaskStatus.Completed
-end
-
-function Task:Canceled()
-	return self.Status == concurrency.TaskStatus.Canceled
-end
-
-function Task:Start(...)
-	if self.Status == concurrency.TaskStatus.Pending then
-		local resume = {coroutine.resume(self.Coroutine, ...)}
-		if resume[1] then
-			if coroutine.status(self.Coroutine) == "dead" then
-				table.remove(resume, 1)
-				self.Value = resume
-				self.Status = concurrency.TaskStatus.Completed
-			end
-		else
-			self.Value = resume[2]
-			self.Status = concurrency.TaskStatus.Canceled
-		end
-	end
-end
-
-function Task:Wait()
-	while self.Status == concurrency.TaskStatus.Pending do
-		self:Start()
-		concurrency.sleep()
-	end
-end
-
-function Task:Then(fulfill, reject)
-	local fulfillTask
-	local rejectTask
-	
-	if fulfill ~= nil and type(fulfill) == "function" then
-		fulfillTask = concurrency.task(fulfill)
-	end
-	
-	if reject ~= nil and type(reject) == "function" then
-		rejectTask = concurrency.task(reject)
-	end
-	
-	local deferred = concurrency.task(function()
-		concurrency.sleep()
-		self:Wait()
-		if self.Status == concurrency.TaskStatus.Completed then
-			if fulfillTask ~= nil then
-				fulfillTask:Start(unpack(self.Value))
-			end
-		else
-			if rejectTask ~= nil then
-				rejectTask:Start(self.Value)
-			end
-		end
-	end)
-	deferred:Start()
-	
-	return fulfillTask, rejectTask
-end
-
 function concurrency.task(fn)
 	argTypeOrDie(fn, "function", "task", 1)
 	
-	local self = setmetatable({}, Task)
-	self.Coroutine = coroutine.create(fn)
-	self.Status = concurrency.TaskStatus.Pending
-	
-	return self
+	return Task.new(fn)
 end
 
 function concurrency.async(fn)
@@ -142,8 +72,5 @@ function concurrency.callback(fn)
 	
 	return callbackFn
 end
-
-concurrency.yield = coroutine.yield
-concurrency.sleep = require("sleep.sleep")
 
 return concurrency
