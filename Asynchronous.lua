@@ -1,10 +1,10 @@
-local concurrency = {}
+local asynchronous = {}
 local Task = require("Task")
 
-concurrency._version = "0.2.2"
-concurrency.TaskStatus = require("StatusEnum")
-concurrency.sleep = Task.sleep
-concurrency.yield = coroutine.yield
+asynchronous._version = "0.2.2"
+asynchronous.TaskStatus = require("StatusEnum")
+asynchronous.sleep = Task.sleep
+asynchronous.yield = coroutine.yield
 
 local function argTypeOrDie(arg, datatype, functionName, argPosition)
 	local t = type(arg)
@@ -13,17 +13,17 @@ local function argTypeOrDie(arg, datatype, functionName, argPosition)
 	end
 end
 
-function concurrency.task(fn)
+function asynchronous.task(fn)
 	argTypeOrDie(fn, "function", "task", 1)
 	
 	return Task.new(fn)
 end
 
-function concurrency.async(fn)
+function asynchronous.async(fn)
 	argTypeOrDie(fn, "function", "async", 1)
 	
 	local asyncFn = function(...)
-		local task = concurrency.task(fn)
+		local task = asynchronous.task(fn)
 		task:Start(...)
 		return task
 	end
@@ -31,26 +31,26 @@ function concurrency.async(fn)
 	return asyncFn
 end
 
-function concurrency.await(task)
+function asynchronous.await(task)
 	argTypeOrDie(task, "table", "await", 1)
 	
-	if task.Status == concurrency.TaskStatus.Pending then
-		concurrency.yield()
+	if task.Status == asynchronous.TaskStatus.Pending then
+		asynchronous.yield()
 		task:Wait()
 	end
 	
-	if task.Status == concurrency.TaskStatus.Completed then
+	if task.Status == asynchronous.TaskStatus.Completed then
 		return unpack(task.Value)
 	else
 		error(task.Value, 2)
 	end
 end
 
-function concurrency.callback(fn)
+function asynchronous.callback(fn)
 	argTypeOrDie(fn, "function", "callback", 1)
 	
 	local callbackFn = function(...)
-		local task = concurrency.task(fn)
+		local task = asynchronous.task(fn)
 		local args = {...}
 		local fulfill
 		local reject
@@ -73,4 +73,4 @@ function concurrency.callback(fn)
 	return callbackFn
 end
 
-return concurrency
+return asynchronous
