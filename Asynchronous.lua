@@ -35,7 +35,6 @@ function asynchronous.await(task)
 	argTypeOrDie(task, "table", "await", 1)
 	
 	if task.Status == asynchronous.TaskStatus.Pending then
-		asynchronous.yield()
 		task:Wait()
 	end
 	
