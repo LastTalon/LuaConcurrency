@@ -10,5 +10,5 @@ local name = asynchronous.async(LazyReturn)("World")
 local greeting = "Hello, "
 local ending = "!"
 
-local sentence = greeting .. asynchronous.await(name) .. ending
-print(sentence)
+print(greeting .. "Program" .. ending)
+print(greeting .. asynchronous.await(name) .. ending)
