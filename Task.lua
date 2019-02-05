@@ -29,7 +29,7 @@ end
 
 function Task:Start(...)
 	if self.Status == Task.TaskStatus.Pending and coroutine.status(self.Coroutine) == "suspended" then
-		self.Status, self.Value = extractStatus(coroutine.resume(self.Coroutine, ...), coroutine.status(self.Coroutine))
+		self.Status, self.Value = extractStatus({coroutine.resume(self.Coroutine, ...)}, coroutine.status(self.Coroutine))
 	end
 	if not self.Persist and self.Status ~= Task.TaskStatus.Pending then
 		local co = coroutine.create(function()

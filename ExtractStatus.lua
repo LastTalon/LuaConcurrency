@@ -1,16 +1,13 @@
 local TaskStatus = require("StatusEnum")
 
-local function extract(...)
-	local args = {...}
-	local status = args[#args]
-	table.remove(args)
-	if args[1] then
+local function extract(resume, status)
+	if resume[1] then
 		if status == "dead" then
-			table.remove(args, 1)
-			return TaskStatus.Completed, args
+			table.remove(resume, 1)
+			return TaskStatus.Completed, resume
 		end
 	else
-		return TaskStatus.Canceled, args[2]
+		return TaskStatus.Canceled, resume[2]
 	end
 	return TaskStatus.Pending, nil
 end

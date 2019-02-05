@@ -9,7 +9,7 @@ local function sleep(duration)
 		fulfilled = true
 		if coroutine.status(co) == "suspended" then
 			if task ~= nil then
-				task.Status, task.Value = extractStatus(coroutine.resume(co), coroutine.status(co))
+				task.Status, task.Value = extractStatus({coroutine.resume(co)}, coroutine.status(co))
 			else
 				coroutine.resume(co)
 			end
